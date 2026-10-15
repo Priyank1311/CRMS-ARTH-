@@ -1,65 +1,73 @@
-# 5-Minute Video Presentation Script
+# 5-Minute Explanation Video Script
 ## Cash Management & Reconciliation System (CMRS)
 
-> **Target Duration:** Exactly 5:00 minutes  
-> **Speaker Notes:** Speak with clarity and confidence. Keep your browser open at `http://localhost:5173/` and backend Swagger open at `http://127.0.0.1:8000/api/docs/`.
+> **Target Duration:** Exactly 5:00 minutes (Max 5 minutes as required)  
+> **Speaker Notes:** Keep your browser open at `http://localhost:5173/` and backend Swagger open at `http://127.0.0.1:8000/api/docs/`. Speak clearly and confidently.
 
 ---
 
-### [0:00 - 0:35] Part 1: Problem Understanding & Financial Workflow
-*(Screen: Show README architecture diagram or CMRS Home Screen)*
+### [0:00 - 0:40] 1. Problem Understanding & Core Financial Workflow
+*(Screen: Show CMRS Architecture Diagram or CMRS Web Interface)*
 
 > **Speaker:**  
 > "Hello! Today, I’m presenting the Cash Management & Reconciliation System (CMRS) that I engineered for this screening assignment.
 >
-> In retail lending and microfinance, field agents collect loan repayments in cash directly from borrowers. However, cash is inherently vulnerable to leakages, miscounts, transit loss, counterfeit currency, and delayed reconciliation.
+> In lending and microfinance, field collection agents collect loan repayments in cash directly from borrowers and deposit them at their respective branches. However, cash is inherently vulnerable to leakages, miscounts, transit loss, counterfeit currency, and reconciliation delays.
 >
-> The business challenge is to ensure absolute transparency across the entire lifecycle:
-> **Customer $\rightarrow$ Field Collection Agent $\rightarrow$ Branch Vault Safe $\rightarrow$ Bank Deposit $\rightarrow$ Settled Company Account.**
+> The company needs total visibility across the full cash lifecycle:
+> **Customer $\longrightarrow$ Collection Agent $\longrightarrow$ Branch Vault $\longrightarrow$ Bank Deposit $\longrightarrow$ Settled Company Account.**
 >
-> To solve this, I designed CMRS with a strict 5-stage finite state machine, zero floating-point error, and role-based permissions."
+> To solve this, I designed CMRS with a strict 5-stage finite state machine, zero floating-point arithmetic errors, and role-based access control."
 
 ---
 
-### [0:35 - 1:15] Part 2: System Architecture & Database Design
-*(Screen: Show Database ERD / Schema in README or Models code)*
+### [0:40 - 1:20] 2. System Architecture & Database Design
+*(Screen: Show Normalized ERD Diagram in README or Code in IDE)*
 
 > **Speaker:**  
 > "On the architecture side:
-> - **Backend:** Python with Django 5 and Django REST Framework, utilizing JWT authentication with custom permissions (`IsCollectionAgent`, `IsBranchManager`, `IsFinanceAdmin`).
-> - **Database:** A normalized relational schema in PostgreSQL. Crucially, **all monetary columns utilize `DECIMAL(12, 2)`** to eliminate floating-point arithmetic errors in financial calculations.
-> - **Concurrency & Idempotency:** We enforce database row-level locking via `select_for_update()` during collection allocations, along with client-generated idempotency keys to completely prevent double-collection during network retries.
-> - **State Machine & Immutability:** Once transactions are reconciled by the branch or settled by the bank, they are state-locked and immutable. Every action writes to an append-only `AuditLog` table."
+> - **Backend:** Built with Python 3.13, Django 5.1, and Django REST Framework, using JWT authentication with granular permissions for Collection Agents, Branch Managers, and Finance Admins.
+> - **Database:** Normalized relational database in PostgreSQL. Crucially, **all monetary values use `DECIMAL(12, 2)`** to eliminate floating-point rounding errors in financial transactions.
+> - **Concurrency & Idempotency:** We enforce database row-level locking via `select_for_update()` during collection allocations, along with client-generated idempotency keys to prevent double-collections during network retries.
+> - **Immutability & Audit Trail:** Once a transaction is reconciled by a branch or settled by the bank, it is state-locked against unauthorized edits. Every state transition writes to an append-only `AuditLog` table."
 
 ---
 
-### [1:15 - 3:15] Part 3: Live Application Demonstration
+### [1:20 - 3:20] 3. Key Workflows & Live Application Demo
 *(Screen: Switch to Browser at `http://localhost:5173/`)*
 
-#### Step 1: Field Agent Portal (Ramesh Kumar)
+#### Step A: Field Collection Agent (Ramesh Kumar)
 > **Speaker:**  
-> *"Here on screen is our React application with an embedded **1-Click Demo Role Switcher** at the top.*
+> *"Here is our React application with a sticky **1-Click Demo Role Switcher** at the top.*
 >
-> *We are currently logged in as **Ramesh Kumar**, our field collection agent. Ramesh sees his assigned borrowers, his active cash-in-hand balance (₹9,500), and pending loan schedules.*
+> *We start logged in as **Ramesh Kumar**, our field collection agent in Bangalore. Ramesh sees his active cash in hand (₹9,500), today's collections, and assigned borrowers.*
 >
-> *Let's collect an EMI from borrower Aarav Patel. When I click **Collect Cash**, the modal allows partial payments, full due payments, advance payments, and even cash denomination breakdowns (₹500, ₹200, ₹100 notes).*
+> *First, we can onboard a new borrower with KYC verification using **Onboard Borrower**, or disburse a new loan with automated EMI schedule generation using **New Loan**.*
 >
-> *Upon submitting, the system atomically updates the loan balance, advances the schedule state, and instantly prints an official thermal receipt with counterfoil and security QR code.*
+> *Let's inspect Aarav Patel's loan. Clicking **Schedule** reveals the complete monthly installment schedule and past repayment receipts.*
 >
-> *At the end of his field day, Ramesh bundles his unsubmitted collections and clicks **Submit Cash to Branch**, creating a handover batch with his declared total amount."*
+> *Now, let's click **Collect**. The modal supports exact due, partial payments, advance payments, and cash denomination breakdowns (₹500, ₹200, ₹100 notes).*
+>
+> *If the borrower prefers digital payment, selecting **UPI Digital (Sandbox)** displays a simulated UPI QR Code and VPA. The system demonstrates how digital collections settle directly into the corporate account while keeping the loan ledger unified.*
+>
+> *Upon submitting, the system updates the loan balance, advances the schedule state, and instantly prints an official thermal receipt with counterfoil and security QR code.*
+>
+> *At the end of the day, Ramesh clicks **Submit Cash to Branch**, creating a handover batch with his declared cash total."*
 
-#### Step 2: Branch Manager Portal (Priya Sharma)
+#### Step B: Branch Manager Portal (Priya Sharma)
 *(Click: "Branch Mgr (Priya)" button in the top banner)*
 > **Speaker:**  
 > *"Now, with one click, we switch to **Priya Sharma**, the Branch Manager.*
 >
-> *Priya sees the branch vault safe balance (₹1,25,000) and inbound agent submissions. When she clicks **Count & Verify**, the system compares the Agent's Declared Cash with the physically counted cash.*
+> *Priya sees the branch vault safe balance (₹1,25,000) and inbound agent submissions. In the **Agent Field Collections Log** tab, she can inspect individual collections and filter by date and status.*
 >
-> *If there's an exact match, the vault is credited. If there is a cash shortage—for example, ₹1,500 missing—the system automatically logs a formal **Discrepancy** in the audit ledger and debits agent liability.*
+> *When Priya clicks **Count & Verify** on an inbound batch, the system compares the Agent's Declared Cash with the physically counted cash.*
 >
-> *Once cash is verified in the vault, Priya clicks **Create Bank Deposit Slip**, selects the reconciled batches, enters the bank name (e.g. HDFC Bank) and the teller's challan reference number. The cash is deducted from the vault and moved into Bank Clearing."*
+> *If there is a shortage—for example, ₹50,000 expected vs ₹48,500 received—the system automatically logs a formal **Discrepancy** of ₹1,500 in the audit ledger and debits agent liability.*
+>
+> *Once cash is verified into the vault, Priya clicks **Create Bank Deposit Slip**, selects the reconciled batches, enters the bank name (e.g. HDFC Bank) and the teller's challan reference number. The cash is deducted from the vault safe and moves into Bank Clearing."*
 
-#### Step 3: Finance HQ & Treasury (Vikram Seth)
+#### Step C: Finance HQ & Treasury (Vikram Seth)
 *(Click: "Finance HQ (Vikram)" button in the top banner)*
 > **Speaker:**  
 > *"Finally, we switch to **Vikram Seth** in Finance HQ.*
@@ -72,34 +80,36 @@
 
 ---
 
-### [3:15 - 4:10] Part 4: Critical Business Rules & Edge Cases Handled
+### [3:20 - 4:10] 4. Critical Business Rules & Edge Cases Handled
 *(Screen: Show the test suite running or README business cases table)*
 
 > **Speaker:**  
-> "We intentionally handled the real-world edge cases specified in the assignment:
-> 1. **Partial Repayments:** Allocates cash to the oldest overdue EMI first, updating `paid_amount` and marking `PARTIALLY_PAID`.
-> 2. **Over-collection:** Automatically clears the active EMI and rolls the surplus forward into upcoming installments.
-> 3. **Rejected Cash Handover:** If an agent's cash envelope is tampered with, the manager can reject it with a reason; the collections safely revert to the agent's queue.
-> 4. **Bank Credit Mismatch:** Highlights variance between branch deposits and actual bank credit.
-> 5. **Idempotency & Double Prevention:** Unique database constraints on `(bank_name, bank_reference_no)` and collection idempotency keys.
+> "We intentionally handled the real-world business cases specified in the assignment:
+> 1. **Partial Repayment:** Allocates cash to the active installment first, updating `paid_amount` and marking `PARTIALLY_PAID`.
+> 2. **Over-Collection:** Automatically clears the active EMI and cascades the surplus forward into upcoming scheduled installments.
+> 3. **Rejected Cash Handover:** If an agent's cash envelope is tampered with, the manager rejects it with remarks; collections safely revert to the agent's queue.
+> 4. **Bank Credit Mismatch:** Highlights variance between branch deposits and actual bank statement credit.
+> 5. **Idempotency & Duplicate Prevention:** Unique database constraints on `(bank_name, bank_reference_no)` and collection idempotency keys.
 > 6. **Automated Test Suite:** We have 8 comprehensive unit tests in Django verifying financial math, partial repayments, discrepancy calculations, and immutability."
 
 ---
 
-### [4:10 - 4:40] Part 5: Technology Choices & Trade-offs
+### [4:10 - 4:40] 5. Technology Choices & Trade-offs
 > **Speaker:**  
-> "A few key engineering trade-offs:
+> "Key engineering trade-offs made:
 > - **PostgreSQL & Decimal over Float:** In fintech, floating-point rounding is catastrophic. We used Python's `Decimal` and SQL `NUMERIC` throughout.
-> - **Interactive Role Switcher vs Separate Logins:** While we support standard JWT logins, I implemented a persistent Demo Role Switcher to enable seamless interview evaluation without needing constant logouts.
+> - **Interactive Role Switcher vs Separate Logins:** While we support standard JWT login endpoints, I implemented a persistent Demo Role Switcher to enable seamless interview evaluation without needing constant logouts.
 > - **Synchronous Atomic Locks vs Celery Worker:** For transaction consistency, database-level atomic transactions (`transaction.atomic`) guarantee data integrity without the operational overhead of a distributed queue for this scale."
 
 ---
 
-### [4:40 - 5:00] Part 6: What I Would Improve With More Time & Conclusion
+### [4:40 - 5:00] 6. Challenges Encountered & Future Improvements
 > **Speaker:**  
-> "With additional time, I would:
+> "A key challenge was ensuring that over-collections cascade accurately across future schedules while maintaining database locks. We solved this with a recursive allocation service inside an atomic block.
+>
+> With additional time, I would:
 > 1. Integrate optical receipt OCR for physical bank deposit challan verification.
-> 2. Add offline SQLite caching for field agents in remote areas with background sync via service workers.
+> 2. Add offline SQLite caching for field agents in remote rural areas with background sync.
 > 3. Connect real-time webhooks with bank statement APIs like RazorpayX or Cashfree.
 >
 > In conclusion, CMRS provides a bulletproof, mathematically precise, and intuitive system for cash management in lending.
@@ -108,7 +118,8 @@
 
 ---
 
-### Video Checklist:
+### Quick Recording Checklist:
+- [ ] Keep `http://localhost:5173/` open in your browser.
 - [ ] Show 1-Click Role Switcher in action.
 - [ ] Record one cash collection and show the thermal receipt.
 - [ ] Show Branch Manager counting cash with shortage discrepancy.
