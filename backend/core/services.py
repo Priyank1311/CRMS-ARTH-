@@ -355,3 +355,87 @@ class FinancialService:
             )
 
             return deposit
+
+    @staticmethod
+    def create_customer(full_name, phone, address, branch_id, assigned_agent_id=None):
+        customer_code = f"CUST-{uuid.uuid4().hex[:6].upper()}"
+        branch = Branch.objects.get(id=branch_id)
+        assigned_agent = User.objects.get(id=assigned_agent_id) if assigned_agent_id else None
+
+        customer = Customer.objects.create(
+            customer_code=customer_code,
+            full_name=full_name,
+            phone=phone,
+            address=address,
+            branch=branch,
+            assigned_agent=assigned_agent,
+            kyc_verified=True
+        )
+        return customer
+
+    @staticmethod
+    def create_loan(customer_id, principal_amount, interest_rate_pct, tenure_months, disbursed_at=None, created_by=None):
+        from datetime import timedelta
+        with transaction.atomic():
+            customer = Customer.objects.select_for_update().get(id=customer_id)
+            principal = Decimal(str(principal_amount))
+            rate = Decimal(str(interest_rate_pct))
+            tenure = int(tenure_months)
+
+            if principal <= Decimal('0.00'):
+                raise ValidationError("Principal amount must be greater than zero.")
+            if tenure <= 0:
+                raise ValidationError("Tenure must be at least 1 month.")
+
+            total_interest = ((principal * rate * tenure) / Decimal("1200.00")).quantize(Decimal("0.01"))
+            total_payable = principal + total_interest
+            monthly_emi = (total_payable / tenure).quantize(Decimal("0.01"))
+
+            loan_account_no = f"LN-{timezone.now().year}-{uuid.uuid4().hex[:6].upper()}"
+            loan = Loan.objects.create(
+                loan_account_no=loan_account_no,
+                customer=customer,
+                principal_amount=principal,
+                interest_rate_pct=rate,
+                tenure_months=tenure,
+                total_payable=total_payable,
+                total_paid=Decimal("0.00"),
+                outstanding_amount=total_payable,
+                status="ACTIVE",
+                disbursed_at=disbursed_at or timezone.now().date()
+            )
+
+            principal_per_emi = (principal / tenure).quantize(Decimal("0.01"))
+            interest_per_emi = (total_interest / tenure).quantize(Decimal("0.01"))
+
+            disbursed = loan.disbursed_at
+            for m in range(1, tenure + 1):
+                due_d = disbursed + timedelta(days=30 * m)
+                RepaymentSchedule.objects.create(
+                    loan=loan,
+                    installment_no=m,
+                    due_date=due_d,
+                    due_amount=monthly_emi,
+                    principal_component=principal_per_emi,
+                    interest_component=interest_per_emi,
+                    paid_amount=Decimal("0.00"),
+                    status="PENDING"
+                )
+
+            AuditLog.objects.create(
+                entity_type="Loan",
+                entity_id=str(loan.id),
+                action="LOAN_CREATED",
+                performed_by=created_by,
+                payload_before={},
+                payload_after={
+                    "loan_account_no": loan_account_no,
+                    "customer": customer.full_name,
+                    "principal": str(principal),
+                    "total_payable": str(total_payable),
+                    "tenure": tenure
+                }
+            )
+
+            return loan
+

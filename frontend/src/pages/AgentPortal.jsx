@@ -4,11 +4,24 @@ import { useAuth } from '../context/AuthContext';
 import CollectModal from '../components/CollectModal';
 import ReceiptModal from '../components/ReceiptModal';
 import SubmitCashModal from '../components/SubmitCashModal';
-import { Wallet, IndianRupee, Users, Send, CheckCircle2, Clock, Eye } from 'lucide-react';
+import CreateCustomerModal from '../components/CreateCustomerModal';
+import CreateLoanModal from '../components/CreateLoanModal';
+import RepaymentHistoryModal from '../components/RepaymentHistoryModal';
+import {
+  Wallet,
+  IndianRupee,
+  Users,
+  Send,
+  UserPlus,
+  FilePlus,
+  History,
+  Eye,
+} from 'lucide-react';
 
 export default function AgentPortal() {
   const { user, refreshUser } = useAuth();
   const [loans, setLoans] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [collections, setCollections] = useState([]);
   const [dailySummary, setDailySummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,16 +33,21 @@ export default function AgentPortal() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [receiptToShow, setReceiptToShow] = useState(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+  const [loanForHistory, setLoanForHistory] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [loansRes, collectionsRes, summaryRes] = await Promise.all([
+      const [loansRes, customersRes, collectionsRes, summaryRes] = await Promise.all([
         api.get('/loans/'),
+        api.get('/customers/'),
         api.get('/collections/'),
         api.get('/collections/daily_summary/'),
       ]);
       setLoans(loansRes.data.results || loansRes.data);
+      setCustomers(customersRes.data.results || customersRes.data);
       setCollections(collectionsRes.data.results || collectionsRes.data);
       setDailySummary(summaryRes.data);
       await refreshUser();
@@ -65,24 +83,41 @@ export default function AgentPortal() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Top Banner / Welcome */}
+      {/* Top Banner / Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Field Agent Collections Portal</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Collect repayments from assigned borrowers and submit daily cash to branch
+            Collect repayments from assigned borrowers, maintain schedules, and submit daily cash to branch
           </p>
         </div>
 
-        <button
-          className="btn btn-primary"
-          onClick={() => setIsSubmitModalOpen(true)}
-          disabled={unsubmittedCollections.length === 0}
-          style={{ padding: '12px 20px', fontSize: '15px' }}
-        >
-          <Send size={18} />
-          <span>Submit Cash to Branch ({unsubmittedCollections.length} pending)</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsCustomerModalOpen(true)}
+          >
+            <UserPlus size={16} />
+            <span>Onboard Borrower</span>
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsLoanModalOpen(true)}
+          >
+            <FilePlus size={16} />
+            <span>New Loan</span>
+          </button>
+
+          <button
+            className="btn btn-primary"
+            onClick={() => setIsSubmitModalOpen(true)}
+            disabled={unsubmittedCollections.length === 0}
+          >
+            <Send size={16} />
+            <span>Submit Cash ({unsubmittedCollections.length} pending)</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -125,10 +160,10 @@ export default function AgentPortal() {
             </div>
           </div>
           <div className="stat-value">
-            {loans.length}
+            {customers.length}
           </div>
           <div className="stat-subtitle">
-            Active loan accounts in field territory
+            Active borrower accounts in territory
           </div>
         </div>
       </div>
@@ -139,7 +174,7 @@ export default function AgentPortal() {
           className={`tab-btn ${activeTab === 'loans' ? 'active' : ''}`}
           onClick={() => setActiveTab('loans')}
         >
-          Assigned Borrowers & Repayment Schedules ({loans.length})
+          Assigned Loans & Schedules ({loans.length})
         </button>
         <button
           className={`tab-btn ${activeTab === 'collections' ? 'active' : ''}`}
@@ -149,7 +184,7 @@ export default function AgentPortal() {
         </button>
       </div>
 
-      {/* Tab 1: Assigned Borrowers */}
+      {/* Tab 1: Assigned Borrowers & Loans */}
       {activeTab === 'loans' && (
         <div className="card">
           <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px' }}>
@@ -165,7 +200,7 @@ export default function AgentPortal() {
                   <th>Next Due EMI</th>
                   <th>Due Date</th>
                   <th>Due Amount</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,9 +213,9 @@ export default function AgentPortal() {
                   return (
                     <tr key={loan.id}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{loan.customer.full_name}</div>
+                        <div style={{ fontWeight: 600 }}>{loan.customer?.full_name}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                          {loan.customer.phone} • {loan.customer.address}
+                          {loan.customer?.phone} • {loan.customer?.address}
                         </div>
                       </td>
                       <td>
@@ -199,7 +234,7 @@ export default function AgentPortal() {
                             EMI #{nextSch.installment_no} ({nextSch.status.replace('_', ' ')})
                           </span>
                         ) : (
-                          <span className="badge badge-emerald">Loan Paid Off</span>
+                          <span className="badge badge-emerald">Loan Closed</span>
                         )}
                       </td>
                       <td>
@@ -215,15 +250,24 @@ export default function AgentPortal() {
                         )}
                       </td>
                       <td>
-                        {nextSch && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {nextSch && (
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => handleOpenCollect(nextSch, loan, loan.customer)}
+                            >
+                              <IndianRupee size={13} />
+                              <span>Collect</span>
+                            </button>
+                          )}
                           <button
-                            className="btn btn-success btn-sm"
-                            onClick={() => handleOpenCollect(nextSch, loan, loan.customer)}
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setLoanForHistory(loan)}
                           >
-                            <IndianRupee size={14} />
-                            <span>Collect Cash</span>
+                            <History size={13} />
+                            <span>Schedule</span>
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -340,6 +384,42 @@ export default function AgentPortal() {
           collections={unsubmittedCollections}
           onClose={() => setIsSubmitModalOpen(false)}
           onSuccess={handleSubmitSuccess}
+        />
+      )}
+
+      {/* Onboard Customer Modal */}
+      {isCustomerModalOpen && (
+        <CreateCustomerModal
+          branchId={user?.branch}
+          onClose={() => setIsCustomerModalOpen(false)}
+          onSuccess={() => {
+            setIsCustomerModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Create Loan Modal */}
+      {isLoanModalOpen && (
+        <CreateLoanModal
+          customers={customers}
+          onClose={() => setIsLoanModalOpen(false)}
+          onSuccess={() => {
+            setIsLoanModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Repayment History Modal */}
+      {loanForHistory && (
+        <RepaymentHistoryModal
+          loan={loanForHistory}
+          onClose={() => setLoanForHistory(null)}
+          onSelectReceipt={(receipt) => {
+            setLoanForHistory(null);
+            setReceiptToShow(receipt);
+          }}
         />
       )}
     </div>

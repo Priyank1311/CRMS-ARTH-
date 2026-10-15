@@ -180,6 +180,31 @@ export default function CollectModal({ schedule, loan, customer, onClose, onSucc
               </div>
             )}
 
+            {paymentMode === 'UPI_SANDBOX' && (
+              <div style={{ background: 'rgba(99, 102, 241, 0.08)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.25)', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc', textTransform: 'uppercase' }}>
+                    PAYMENT GATEWAY SANDBOX (UPI / DIGITAL INTENT)
+                  </span>
+                  <span className="badge badge-indigo">Sandbox Mock Mode</span>
+                </div>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ padding: '8px', background: '#ffffff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '4px', textAlign: 'center' }}>
+                      UPI QR
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px' }}>
+                    <div style={{ fontWeight: 600, color: '#f8fafc' }}>VPA: {customer.customer_code.toLowerCase()}@okhdfcbank</div>
+                    <div style={{ color: 'var(--text-dim)', marginTop: '2px' }}>Scan with GPay / PhonePe / Paytm / BHIM</div>
+                    <div style={{ color: '#34d399', fontSize: '11px', fontWeight: 600, marginTop: '4px' }}>
+                      ✓ Gateway verified: Direct bank settlement enabled
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
               <label className="form-label">Notes / Remarks</label>
               <input

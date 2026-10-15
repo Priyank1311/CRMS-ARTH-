@@ -14,6 +14,7 @@ from .models import (
 )
 from .serializers import (
     BranchSerializer, UserSerializer, CustomerSerializer,
+    CreateCustomerInputSerializer, CreateLoanInputSerializer,
     LoanSerializer, RepaymentScheduleSerializer, CollectionSerializer,
     RecordCollectionInputSerializer, CashSubmissionSerializer,
     CreateSubmissionInputSerializer, VerifySubmissionInputSerializer,
@@ -113,6 +114,27 @@ class DashboardMetricsView(APIView):
             deposits_qs = deposits_qs.filter(branch_id=branch_id)
             discrepancies_qs = discrepancies_qs.filter(branch_id=branch_id)
 
+        agent_id = request.query_params.get('agent_id')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        if agent_id:
+            collections_qs = collections_qs.filter(agent_id=agent_id)
+            schedules_qs = schedules_qs.filter(loan__customer__assigned_agent_id=agent_id)
+            loans_qs = loans_qs.filter(customer__assigned_agent_id=agent_id)
+            submissions_qs = submissions_qs.filter(agent_id=agent_id)
+            discrepancies_qs = discrepancies_qs.filter(agent_id=agent_id)
+
+        if date_from:
+            collections_qs = collections_qs.filter(collected_at__date__gte=date_from)
+            schedules_qs = schedules_qs.filter(due_date__gte=date_from)
+            deposits_qs = deposits_qs.filter(deposit_date__gte=date_from)
+
+        if date_to:
+            collections_qs = collections_qs.filter(collected_at__date__lte=date_to)
+            schedules_qs = schedules_qs.filter(due_date__lte=date_to)
+            deposits_qs = deposits_qs.filter(deposit_date__lte=date_to)
+
         # 1. Expected Collections (Outstanding EMI amounts)
         expected_collections = schedules_qs.filter(
             status__in=['PENDING', 'PARTIALLY_PAID', 'OVERDUE']
@@ -167,7 +189,7 @@ class BranchViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
+class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -178,10 +200,32 @@ class CustomerViewSet(viewsets.ReadOnlyModelViewSet):
             return qs.filter(assigned_agent=user)
         elif user.role == 'BRANCH_MANAGER' and user.branch:
             return qs.filter(branch=user.branch)
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(branch_id=branch_id)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        serializer = CreateCustomerInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        branch_id = data.get('branch_id') or (request.user.branch.id if request.user.branch else None)
+        if not branch_id:
+            first_branch = Branch.objects.first()
+            branch_id = first_branch.id if first_branch else None
+        if not branch_id:
+            return Response({'error': 'Branch ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        customer = FinancialService.create_customer(
+            full_name=data['full_name'],
+            phone=data['phone'],
+            address=data['address'],
+            branch_id=branch_id,
+            assigned_agent_id=data.get('assigned_agent_id')
+        )
+        return Response(CustomerSerializer(customer).data, status=status.HTTP_201_CREATED)
 
-class LoanViewSet(viewsets.ReadOnlyModelViewSet):
+
+class LoanViewSet(viewsets.ModelViewSet):
     serializer_class = LoanSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -192,10 +236,39 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
             return qs.filter(customer__assigned_agent=user)
         elif user.role == 'BRANCH_MANAGER' and user.branch:
             return qs.filter(customer__branch=user.branch)
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(customer__branch_id=branch_id)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        serializer = CreateLoanInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            loan = FinancialService.create_loan(
+                customer_id=data['customer_id'],
+                principal_amount=data['principal_amount'],
+                interest_rate_pct=data['interest_rate_pct'],
+                tenure_months=data['tenure_months'],
+                disbursed_at=data.get('disbursed_at'),
+                created_by=request.user
+            )
+            return Response(LoanSerializer(loan).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
+    @action(detail=True, methods=['get'])
+    def repayment_history(self, request, pk=None):
+        loan = self.get_object()
+        collections = Collection.objects.filter(loan=loan).order_by('-collected_at')
+        return Response({
+            'loan': LoanSerializer(loan).data,
+            'collections': CollectionSerializer(collections, many=True).data
+        })
+
+
+class CollectionViewSet(viewsets.ModelViewSet):
     serializer_class = CollectionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -203,10 +276,55 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         qs = Collection.objects.select_related('schedule', 'loan', 'customer', 'agent').order_by('-collected_at')
         if user.role == 'COLLECTION_AGENT':
-            return qs.filter(agent=user)
+            qs = qs.filter(agent=user)
         elif user.role == 'BRANCH_MANAGER' and user.branch:
-            return qs.filter(agent__branch=user.branch)
+            qs = qs.filter(agent__branch=user.branch)
+
+        # Filters
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(agent__branch_id=branch_id)
+        agent_id = self.request.query_params.get('agent_id')
+        if agent_id:
+            qs = qs.filter(agent_id=agent_id)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(collected_at__date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(collected_at__date__lte=date_to)
+
         return qs
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status in ['BRANCH_RECONCILED', 'BANK_DEPOSITED', 'SETTLED']:
+            return Response(
+                {'error': 'Unauthorized modification: Reconciled or settled collections are legally immutable.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().destroy(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status in ['BRANCH_RECONCILED', 'BANK_DEPOSITED', 'SETTLED']:
+            return Response(
+                {'error': 'Unauthorized modification: Reconciled or settled collections are legally immutable.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status in ['BRANCH_RECONCILED', 'BANK_DEPOSITED', 'SETTLED']:
+            return Response(
+                {'error': 'Unauthorized modification: Reconciled or settled collections are legally immutable.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().partial_update(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'], permission_classes=[IsCollectionAgent])
     def record(self, request):
@@ -255,9 +373,26 @@ class CashSubmissionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = CashSubmission.objects.select_related('agent', 'branch', 'verified_by', 'discrepancy').prefetch_related('collections').order_by('-created_at')
         if user.role == 'COLLECTION_AGENT':
-            return qs.filter(agent=user)
+            qs = qs.filter(agent=user)
         elif user.role == 'BRANCH_MANAGER' and user.branch:
-            return qs.filter(branch=user.branch)
+            qs = qs.filter(branch=user.branch)
+
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(branch_id=branch_id)
+        agent_id = self.request.query_params.get('agent_id')
+        if agent_id:
+            qs = qs.filter(agent_id=agent_id)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+
         return qs
 
     def create(self, request, *args, **kwargs):
@@ -310,7 +445,18 @@ class DiscrepancyViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Discrepancy.objects.select_related('submission', 'agent', 'branch').order_by('-created_at')
         if user.role == 'BRANCH_MANAGER' and user.branch:
-            return qs.filter(branch=user.branch)
+            qs = qs.filter(branch=user.branch)
+
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(branch_id=branch_id)
+        agent_id = self.request.query_params.get('agent_id')
+        if agent_id:
+            qs = qs.filter(agent_id=agent_id)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+
         return qs
 
     @action(detail=True, methods=['post'])
@@ -332,7 +478,21 @@ class BankDepositViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = BankDeposit.objects.select_related('branch', 'created_by', 'settled_by').prefetch_related('submissions').order_by('-created_at')
         if user.role == 'BRANCH_MANAGER' and user.branch:
-            return qs.filter(branch=user.branch)
+            qs = qs.filter(branch=user.branch)
+
+        branch_id = self.request.query_params.get('branch_id')
+        if branch_id:
+            qs = qs.filter(branch_id=branch_id)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(deposit_date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(deposit_date__lte=date_to)
+
         return qs
 
     def create(self, request, *args, **kwargs):

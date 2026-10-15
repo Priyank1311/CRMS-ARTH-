@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import SettleModal from '../components/SettleModal';
+import RepaymentHistoryModal from '../components/RepaymentHistoryModal';
+import CreateCustomerModal from '../components/CreateCustomerModal';
+import CreateLoanModal from '../components/CreateLoanModal';
+import ReceiptModal from '../components/ReceiptModal';
 import {
   TrendingUp,
   Wallet,
@@ -11,36 +15,61 @@ import {
   History,
   Building2,
   FileCheck2,
-  ArrowRight,
+  UserPlus,
+  FilePlus,
+  Filter,
+  Eye,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState(null);
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const [deposits, setDeposits] = useState([]);
   const [discrepancies, setDiscrepancies] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [loans, setLoans] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pipeline');
+
+  // Modals state
   const [selectedDepositToSettle, setSelectedDepositToSettle] = useState(null);
+  const [loanForHistory, setLoanForHistory] = useState(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+  const [receiptToShow, setReceiptToShow] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const branchParam = selectedBranch ? `?branch_id=${selectedBranch}` : '';
-      const [metricsRes, branchesRes, depositsRes, discRes, auditRes] = await Promise.all([
-        api.get(`/dashboard/metrics/${branchParam}`),
+      const params = [];
+      if (selectedBranch) params.push(`branch_id=${selectedBranch}`);
+      if (dateFrom) params.push(`date_from=${dateFrom}`);
+      if (dateTo) params.push(`date_to=${dateTo}`);
+      if (statusFilter) params.push(`status=${statusFilter}`);
+      const qs = params.length > 0 ? `?${params.join('&')}` : '';
+
+      const [metricsRes, branchesRes, depositsRes, discRes, auditRes, loansRes, custRes] = await Promise.all([
+        api.get(`/dashboard/metrics/${qs}`),
         api.get('/branches/'),
-        api.get('/bank-deposits/'),
-        api.get('/discrepancies/'),
+        api.get(`/bank-deposits/${qs}`),
+        api.get(`/discrepancies/${qs}`),
         api.get('/audit-logs/'),
+        api.get(`/loans/${qs}`),
+        api.get('/customers/'),
       ]);
       setMetrics(metricsRes.data);
       setBranches(branchesRes.data.results || branchesRes.data);
       setDeposits(depositsRes.data.results || depositsRes.data);
       setDiscrepancies(discRes.data.results || discRes.data);
       setAuditLogs(auditRes.data.results || auditRes.data);
+      setLoans(loansRes.data.results || loansRes.data);
+      setCustomers(custRes.data.results || custRes.data);
     } catch (err) {
       console.error('Failed to load admin dashboard:', err);
     } finally {
@@ -50,7 +79,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedBranch]);
+  }, [selectedBranch, dateFrom, dateTo, statusFilter]);
 
   const handleSettleSuccess = () => {
     setSelectedDepositToSettle(null);
@@ -59,20 +88,46 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header & Branch Filter */}
+      {/* Header & Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Finance & Treasury HQ Dashboard</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            Executive cash management lifecycle, liquidity pipeline, and bank statement settlement
+            Executive cash management lifecycle, nationwide liquidity pipeline, and bank statement settlements
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Building2 size={18} color="var(--text-muted)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsCustomerModalOpen(true)}
+          >
+            <UserPlus size={16} />
+            <span>Onboard Customer</span>
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsLoanModalOpen(true)}
+          >
+            <FilePlus size={16} />
+            <span>New Loan</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Toolbar */}
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '14px 18px', borderRadius: '14px', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)' }}>
+          <Filter size={16} />
+          <span style={{ fontWeight: 600 }}>Filter Nationwide Data:</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Building2 size={16} color="var(--text-dim)" />
           <select
             className="form-select"
-            style={{ width: '220px' }}
+            style={{ width: '220px', padding: '6px 12px', fontSize: '13px' }}
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
           >
@@ -84,11 +139,59 @@ export default function AdminDashboard() {
             ))}
           </select>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>From:</span>
+          <input
+            type="date"
+            className="form-input"
+            style={{ width: '150px', padding: '6px 10px', fontSize: '12px' }}
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>To:</span>
+          <input
+            type="date"
+            className="form-input"
+            style={{ width: '150px', padding: '6px 10px', fontSize: '12px' }}
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+          />
+        </div>
+
+        <select
+          className="form-select"
+          style={{ width: '170px', padding: '6px 12px', fontSize: '13px' }}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          <option value="DEPOSITED">In Clearing (Deposited)</option>
+          <option value="SETTLED">Settled</option>
+          <option value="SETTLEMENT_MISMATCH">Settlement Mismatch</option>
+        </select>
+
+        {(selectedBranch || dateFrom || dateTo || statusFilter) && (
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setSelectedBranch('');
+              setDateFrom('');
+              setDateTo('');
+              setStatusFilter('');
+            }}
+          >
+            Clear All
+          </button>
+        )}
       </div>
 
       {/* 5-Stage Financial Liquidity Funnel */}
       <div className="card" style={{ padding: '20px' }}>
-        <h2 style={{ fontSize: '15px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: '16px' }}>
           FINTECH CASH RECONCILIATION LIFECYCLE (END-TO-END LIQUIDITY PIPELINE)
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
@@ -148,10 +251,16 @@ export default function AdminDashboard() {
           Bank Statement Settlement Queue ({deposits.filter((d) => d.status !== 'SETTLED').length})
         </button>
         <button
+          className={`tab-btn ${activeTab === 'portfolio' ? 'active' : ''}`}
+          onClick={() => setActiveTab('portfolio')}
+        >
+          Loan Portfolio & Amortization Schedules ({loans.length})
+        </button>
+        <button
           className={`tab-btn ${activeTab === 'discrepancies' ? 'active' : ''}`}
           onClick={() => setActiveTab('discrepancies')}
         >
-          System Discrepancies & Audit Flags ({discrepancies.length})
+          Discrepancies & Audit Flags ({discrepancies.length})
         </button>
         <button
           className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
@@ -232,7 +341,82 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Tab 2: Discrepancies */}
+      {/* Tab 2: Loan Portfolio */}
+      {activeTab === 'portfolio' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 style={{ fontSize: '17px', fontWeight: 700 }}>
+              Nationwide Loan Accounts & Outstanding Balances
+            </h2>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setIsCustomerModalOpen(true)}>
+                <UserPlus size={14} />
+                <span>New Borrower</span>
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => setIsLoanModalOpen(true)}>
+                <FilePlus size={14} />
+                <span>Create Loan</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Loan Account #</th>
+                  <th>Borrower</th>
+                  <th>Branch</th>
+                  <th>Principal</th>
+                  <th>Total Payable</th>
+                  <th>Total Paid</th>
+                  <th>Outstanding Amount</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.map((l) => (
+                  <tr key={l.id}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{l.loan_account_no}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{l.customer?.full_name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>{l.customer?.customer_code}</div>
+                    </td>
+                    <td>{l.customer?.branch_name}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>₹{Number(l.principal_amount).toLocaleString('en-IN')}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>₹{Number(l.total_payable).toLocaleString('en-IN')}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#34d399' }}>
+                      ₹{Number(l.total_paid).toLocaleString('en-IN')}
+                    </td>
+                    <td>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#fbbf24' }}>
+                        ₹{Number(l.outstanding_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${l.status === 'ACTIVE' ? 'badge-emerald' : 'badge-neutral'}`}>
+                        {l.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setLoanForHistory(l)}
+                      >
+                        <History size={13} />
+                        <span>Schedules</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Discrepancies */}
       {activeTab === 'discrepancies' && (
         <div className="card">
           <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px' }}>
@@ -289,7 +473,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Tab 3: Audit Logs */}
+      {/* Tab 4: Audit Logs */}
       {activeTab === 'audit' && (
         <div className="card">
           <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px' }}>
@@ -338,6 +522,49 @@ export default function AdminDashboard() {
           deposit={selectedDepositToSettle}
           onClose={() => setSelectedDepositToSettle(null)}
           onSuccess={handleSettleSuccess}
+        />
+      )}
+
+      {/* Onboard Customer Modal */}
+      {isCustomerModalOpen && (
+        <CreateCustomerModal
+          onClose={() => setIsCustomerModalOpen(false)}
+          onSuccess={() => {
+            setIsCustomerModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Create Loan Modal */}
+      {isLoanModalOpen && (
+        <CreateLoanModal
+          customers={customers}
+          onClose={() => setIsLoanModalOpen(false)}
+          onSuccess={() => {
+            setIsLoanModalOpen(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Repayment History Modal */}
+      {loanForHistory && (
+        <RepaymentHistoryModal
+          loan={loanForHistory}
+          onClose={() => setLoanForHistory(null)}
+          onSelectReceipt={(receipt) => {
+            setLoanForHistory(null);
+            setReceiptToShow(receipt);
+          }}
+        />
+      )}
+
+      {/* Receipt Modal */}
+      {receiptToShow && (
+        <ReceiptModal
+          collection={receiptToShow}
+          onClose={() => setReceiptToShow(null)}
         />
       )}
     </div>

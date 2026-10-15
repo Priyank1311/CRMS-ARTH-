@@ -28,6 +28,22 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CreateCustomerInputSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=120)
+    phone = serializers.CharField(max_length=20)
+    address = serializers.CharField()
+    branch_id = serializers.UUIDField(required=False)
+    assigned_agent_id = serializers.UUIDField(required=False, allow_null=True)
+
+
+class CreateLoanInputSerializer(serializers.Serializer):
+    customer_id = serializers.UUIDField()
+    principal_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('100.00'))
+    interest_rate_pct = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal('0.00'))
+    tenure_months = serializers.IntegerField(min_value=1, max_value=60)
+    disbursed_at = serializers.DateField(required=False)
+
+
 class RepaymentScheduleSerializer(serializers.ModelSerializer):
     remaining_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
