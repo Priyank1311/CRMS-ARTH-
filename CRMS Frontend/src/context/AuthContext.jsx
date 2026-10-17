@@ -7,6 +7,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [demoUsers, setDemoUsers] = useState([]);
+
+  const fetchDemoUsers = async () => {
+    try {
+      const res = await api.get('/auth/quick/');
+      if (res.data?.users) {
+        setDemoUsers(res.data.users);
+      }
+    } catch (err) {
+      console.warn('Could not fetch demo users list:', err);
+    }
+  };
+
   const fetchCurrentUser = async () => {
     try {
       const res = await api.get('/auth/me/');
@@ -23,13 +36,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const switchRole = async (targetRole) => {
+  const switchRole = async (target) => {
     setLoading(true);
     try {
-      // Clear old tokens first so requests are clean
       localStorage.removeItem('cmrs_access_token');
       localStorage.removeItem('cmrs_refresh_token');
-      const res = await api.post('/auth/quick/', { role: targetRole });
+      const KNOWN_ROLES = ['COLLECTION_AGENT', 'BRANCH_MANAGER', 'FINANCE_ADMIN'];
+      const payload = typeof target === 'string'
+        ? (KNOWN_ROLES.includes(target) ? { role: target } : { username: target })
+        : typeof target === 'object'
+        ? target
+        : { role: target };
+
+      const res = await api.post('/auth/quick/', payload);
       localStorage.setItem('cmrs_access_token', res.data.access);
       localStorage.setItem('cmrs_refresh_token', res.data.refresh);
       setUser(res.data.user);
@@ -37,7 +56,7 @@ export const AuthProvider = ({ children }) => {
       const profileRes = await api.get('/auth/me/');
       setUser(profileRes.data);
     } catch (err) {
-      console.error('Role switch failed:', err);
+      console.error('Role/User switch failed:', err);
     } finally {
       setLoading(false);
     }
@@ -63,6 +82,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    fetchDemoUsers();
     const token = localStorage.getItem('cmrs_access_token');
     if (token) {
       fetchCurrentUser().finally(() => setLoading(false));
@@ -78,6 +98,8 @@ export const AuthProvider = ({ children }) => {
         user,
         role: user?.role,
         loading,
+        demoUsers,
+        fetchDemoUsers,
         switchRole,
         login,
         logout,

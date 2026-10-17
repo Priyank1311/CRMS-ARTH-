@@ -7,7 +7,14 @@ export default function Navbar({ onRefresh }) {
 
   // Dynamically compute Swagger API docs URL based on environment
   const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-  const docsUrl = `${apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '')}/api/docs/`;
+  let docsUrl = 'http://127.0.0.1:8000/api/docs/';
+  try {
+    const normalized = apiBase.startsWith('http') ? apiBase : `https://${apiBase}`;
+    const parsedUrl = new URL(normalized);
+    docsUrl = `${parsedUrl.origin}/api/docs/`;
+  } catch {
+    docsUrl = `${apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '')}/api/docs/`;
+  }
 
   return (
     <nav className="navbar">

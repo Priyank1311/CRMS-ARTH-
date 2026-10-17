@@ -13,10 +13,12 @@ class BranchSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     branch_name = serializers.CharField(source='branch.name', read_only=True)
+    branch_city = serializers.CharField(source='branch.city', read_only=True)
+    branch_code = serializers.CharField(source='branch.code', read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'branch', 'branch_name', 'employee_id', 'phone']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'branch', 'branch_name', 'branch_city', 'branch_code', 'employee_id', 'phone']
 
 
 class CustomerSerializer(serializers.ModelSerializer):

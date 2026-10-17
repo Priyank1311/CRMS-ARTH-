@@ -29,27 +29,51 @@ from .permissions import IsCollectionAgent, IsBranchManager, IsFinanceAdmin
 class QuickAuthView(APIView):
     """
     Convenient 1-Click demo authentication endpoint.
-    Allows instant login as Agent, Branch Manager, or Finance Admin.
+    Allows instant login as any Agent, Branch Manager, or Finance Admin.
+    Also provides GET endpoint to list all demo personas grouped by city.
     """
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
+    def get(self, request):
+        users = User.objects.select_related('branch').all().order_by('role', 'branch__name', 'first_name')
+        data = []
+        for u in users:
+            data.append({
+                'username': u.username,
+                'name': u.get_full_name() or u.username,
+                'role': u.role,
+                'role_display': u.get_role_display(),
+                'branch_name': u.branch.name if u.branch else 'Finance Head Office (HQ)',
+                'branch_city': u.branch.city if u.branch else 'Central Treasury',
+                'branch_code': u.branch.code if u.branch else 'HQ-01',
+                'employee_id': u.employee_id,
+            })
+        return Response({'users': data})
+
     def post(self, request):
-        role = request.data.get('role', 'COLLECTION_AGENT')
-        if role == 'COLLECTION_AGENT':
-            user = User.objects.filter(role='COLLECTION_AGENT', username='ramesh_agent').first() or User.objects.filter(role=role).first()
-        elif role == 'BRANCH_MANAGER':
-            user = User.objects.filter(role='BRANCH_MANAGER', username='priya_manager').first() or User.objects.filter(role=role).first()
-        elif role == 'FINANCE_ADMIN':
-            user = User.objects.filter(role='FINANCE_ADMIN', username='vikram_admin').first() or User.objects.filter(role=role).first()
-        else:
-            user = User.objects.filter(role=role).first()
+        username = request.data.get('username')
+        role = request.data.get('role')
+
+        user = None
+        if username:
+            user = User.objects.filter(username=username).first()
+
+        if not user and role:
+            if role == 'COLLECTION_AGENT':
+                user = User.objects.filter(role='COLLECTION_AGENT', username='ramesh_agent').first() or User.objects.filter(role=role).first()
+            elif role == 'BRANCH_MANAGER':
+                user = User.objects.filter(role='BRANCH_MANAGER', username='priya_manager').first() or User.objects.filter(role=role).first()
+            elif role == 'FINANCE_ADMIN':
+                user = User.objects.filter(role='FINANCE_ADMIN', username='vikram_admin').first() or User.objects.filter(role=role).first()
+            else:
+                user = User.objects.filter(role=role).first()
 
         if not user:
-            # Fallback to any user or create
-            user = User.objects.filter(is_superuser=True).first()
-            if not user:
-                return Response({'error': f'No user found with role {role}'}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.filter(username='ramesh_agent').first() or User.objects.first()
+
+        if not user:
+            return Response({'error': 'No user found in system'}, status=status.HTTP_404_NOT_FOUND)
 
         refresh = RefreshToken.for_user(user)
         return Response({
