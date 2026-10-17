@@ -10,7 +10,7 @@ services:
     name: crms-backend
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn cmrs_project.wsgi:application"
+    startCommand: "python manage.py migrate --no-input && python manage.py seed_data && gunicorn cmrs_project.wsgi:application"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
