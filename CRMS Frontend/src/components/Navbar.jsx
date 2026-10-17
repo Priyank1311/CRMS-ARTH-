@@ -5,6 +5,10 @@ import { Landmark, FileCode, Wallet, Vault } from 'lucide-react';
 export default function Navbar({ onRefresh }) {
   const { user, role } = useAuth();
 
+  // Dynamically compute Swagger API docs URL based on environment
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  const docsUrl = `${apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '')}/api/docs/`;
+
   return (
     <nav className="navbar">
       <div className="navbar-inner">
@@ -42,7 +46,7 @@ export default function Navbar({ onRefresh }) {
           )}
 
           <a
-            href="http://127.0.0.1:8000/api/docs/"
+            href={docsUrl}
             target="_blank"
             rel="noreferrer"
             className="btn btn-secondary btn-sm"
