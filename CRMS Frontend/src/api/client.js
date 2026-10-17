@@ -1,10 +1,16 @@
 import axios from 'axios';
 
-// Support production Vercel environment variable with local fallback
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+// Get base URL from environment or fallback to localhost
+let envURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+
+// Auto-normalize: if user entered 'https://crms-arth.onrender.com' without '/api/v1', auto-append it
+envURL = envURL.trim().replace(/\/+$/, '');
+if (!envURL.endsWith('/api/v1')) {
+  envURL = `${envURL}/api/v1`;
+}
 
 const api = axios.create({
-  baseURL,
+  baseURL: envURL,
   headers: {
     'Content-Type': 'application/json',
   },
