@@ -71,7 +71,6 @@ if os.environ.get('DATABASE_URL'):
             default=os.environ.get('DATABASE_URL'),
             conn_max_age=600,
             conn_health_checks=True,
-            ssl_require=False if 'localhost' in os.environ.get('DATABASE_URL', '') or '127.0.0.1' in os.environ.get('DATABASE_URL', '') else True,
         )
     }
 elif os.environ.get('DB_ENGINE') == 'postgresql':

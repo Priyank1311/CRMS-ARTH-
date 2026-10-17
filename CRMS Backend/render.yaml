@@ -1,24 +1,26 @@
+databases:
+  - name: crms-database
+    plan: free
+    databaseName: cmrs_db
+    user: cmrs_user
+
 services:
   - type: web
+    plan: free
     name: crms-backend
     runtime: python
     buildCommand: "./build.sh"
     startCommand: "gunicorn cmrs_project.wsgi:application"
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: "False"
       - key: DATABASE_URL
         fromDatabase:
           name: crms-database
           property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: CORS_ALLOW_ALL_ORIGINS
         value: "True"
-
-databases:
-  - name: crms-database
-    databaseName: crms
-    user: crms_user
