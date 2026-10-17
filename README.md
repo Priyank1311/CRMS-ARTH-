@@ -1,45 +1,50 @@
 # Cash Management & Reconciliation System (CMRS)
 
-[![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![Django 5.1](https://img.shields.io/badge/Django-5.1-green.svg)](https://www.djangoproject.com/)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
-[![DRF Spectacular](https://img.shields.io/badge/OpenAPI-3.0-orange.svg)](http://127.0.0.1:8000/api/docs/)
+[![Render](https://img.shields.io/badge/Backend-Render-46E3B7.svg)](https://crms-arth.onrender.com/api/docs/)
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-black.svg)](https://crmsfrontend.vercel.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An enterprise-grade **Cash Management & Reconciliation System (CMRS)** designed for lending and fintech institutions collecting loan repayments through field collection agents, reconciling cash at local branches, and settling deposits into corporate bank accounts.
+
+- 🌐 **Live Web App (Vercel)**: [https://crmsfrontend.vercel.app/](https://crmsfrontend.vercel.app/)
+- ⚙️ **Live Backend API (Render)**: [https://crms-arth.onrender.com/](https://crms-arth.onrender.com/)
+- 📖 **Interactive OpenAPI / Swagger Docs**: [https://crms-arth.onrender.com/api/docs/](https://crms-arth.onrender.com/api/docs/)
 
 ---
 
 ## 1. Assignment Requirements & Implementation Checklist
 
-The table below maps **every requirement and evaluation criteria** from the assignment document to its exact implementation:
+The table below maps **every requirement and evaluation criteria** from the assignment specification to its exact implementation:
 
 | Section & Requirement | Assignment Specification | Implementation Details & Code Reference | Status |
 | :--- | :--- | :--- | :---: |
-| **Customer Management** | Create and manage customers with KYC verification | [`CreateCustomerModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/CreateCustomerModal.jsx), `FinancialService.create_customer()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L359-L373) | ✅ **100% Done** |
-| **Loan Management** | Create and manage loans, view outstanding balance | [`CreateLoanModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/CreateLoanModal.jsx), `FinancialService.create_loan()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L375-L440) | ✅ **100% Done** |
-| **Repayment Schedules** | Maintain monthly EMI schedules (Principal + Interest) | Auto-generated on loan creation with exact amortization in [`models.py`](file:///d:/My%20Projects/Arth/backend/core/models.py#L82-L108) | ✅ **100% Done** |
-| **Repayment History** | View schedule status and historical collection receipts | [`RepaymentHistoryModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/RepaymentHistoryModal.jsx), `/api/v1/loans/{id}/repayment_history/` | ✅ **100% Done** |
-| **Field Cash Collection** | View assigned borrowers, record cash collections | [`AgentPortal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/pages/AgentPortal.jsx), `record_collection()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L17-L115) | ✅ **100% Done** |
-| **Partial & Advance Payments**| Support partial payments and advance surplus cascade | Atomic allocation in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L42-L78); tested in [`test_financial_lifecycle.py`](file:///d:/My%20Projects/Arth/backend/core/tests/test_financial_lifecycle.py#L67-L110) | ✅ **100% Done** |
-| **Receipt Generation** | Unique receipt code (`RCP-YYYYMMDD-XXXX`) with QR | [`ReceiptModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/ReceiptModal.jsx) thermal counterfoil with printable layout | ✅ **100% Done** |
-| **Daily Handover Submission** | Agent batches collected cash for branch handover | [`SubmitCashModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/SubmitCashModal.jsx), `create_cash_submission()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L117-L157) | ✅ **100% Done** |
-| **Branch Reconciliation** | Manager counts cash, compares expected vs counted | [`VerifySubmissionModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/VerifySubmissionModal.jsx), `verify_cash_submission()` | ✅ **100% Done** |
-| **Discrepancy Tracking** | Auto-detect cash shortage/excess (e.g. ₹50k vs ₹48.5k) | `Discrepancy` model created automatically on mismatch in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L198-L215) | ✅ **100% Done** |
+| **Customer Management** | Create and manage customers with KYC verification | [`CreateCustomerModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/CreateCustomerModal.jsx), `FinancialService.create_customer()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **Loan Management** | Create and manage loans, view outstanding balance | [`CreateLoanModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/CreateLoanModal.jsx), `FinancialService.create_loan()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **Repayment Schedules** | Maintain monthly EMI schedules (Principal + Interest) | Auto-generated on loan creation with exact amortization in [`models.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/models.py) | ✅ **100% Done** |
+| **Repayment History** | View schedule status and historical collection receipts | [`RepaymentHistoryModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/RepaymentHistoryModal.jsx), `/api/v1/loans/{id}/repayment_history/` | ✅ **100% Done** |
+| **Field Cash Collection** | View assigned borrowers, record cash collections | [`AgentPortal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/pages/AgentPortal.jsx), `record_collection()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **Partial & Advance Payments**| Support partial payments and advance surplus cascade | Atomic allocation in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py); tested in [`test_financial_lifecycle.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/tests/test_financial_lifecycle.py) | ✅ **100% Done** |
+| **Receipt Generation** | Unique receipt code (`RCP-YYYYMMDD-XXXX`) with QR | [`ReceiptModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/ReceiptModal.jsx) thermal counterfoil with printable layout | ✅ **100% Done** |
+| **Daily Handover Submission** | Agent batches collected cash for branch handover | [`SubmitCashModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/SubmitCashModal.jsx), `create_cash_submission()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **Branch Reconciliation** | Manager counts cash, compares expected vs counted | [`VerifySubmissionModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/VerifySubmissionModal.jsx), `verify_cash_submission()` | ✅ **100% Done** |
+| **Discrepancy Tracking** | Auto-detect cash shortage/excess (e.g. ₹50k vs ₹48.5k) | `Discrepancy` model created automatically on mismatch in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
 | **Branch Vault Management** | Reconciled cash credited to branch vault safe | Real-time vault balance tracking in `Branch.vault_cash_balance` | ✅ **100% Done** |
-| **Agent Collections Stream** | Manager views individual collections across branch | Dedicated "Agent Field Collections Log" tab in [`BranchPortal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/pages/BranchPortal.jsx#L270-L330) | ✅ **100% Done** |
-| **Bank Deposits** | Create deposit challans against vault cash | [`DepositModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/DepositModal.jsx), `create_bank_deposit()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L250-L315) | ✅ **100% Done** |
-| **Bank Settlement & Mismatch**| Reconcile statement credit, detect fake note/fee diff | [`SettleModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/SettleModal.jsx), `settle_bank_deposit()` in [`services.py`](file:///d:/My%20Projects/Arth/backend/core/services.py#L318-L358) | ✅ **100% Done** |
-| **5-Stage Liquidity Funnel** | Expected $\rightarrow$ Field $\rightarrow$ Vault $\rightarrow$ Bank $\rightarrow$ Settled | Interactive executive pipeline in [`AdminDashboard.jsx`](file:///d:/My%20Projects/Arth/frontend/src/pages/AdminDashboard.jsx#L140-L195) | ✅ **100% Done** |
-| **Multi-Dimension Filters** | Filter by **Date**, **Branch**, **Agent**, and **Status** | Implemented on all viewsets in [`views.py`](file:///d:/My%20Projects/Arth/backend/core/views.py) and UI filter bars | ✅ **100% Done** |
-| **Payment Gateway Sandbox** | Support UPI/digital repayments in unified ledger | Interactive UPI QR & VPA simulation in [`CollectModal.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/CollectModal.jsx#L183-L205) | ✅ **100% Done** |
-| **Security & Immutability** | Prevent unauthorized edits to reconciled records | State locks in [`views.py`](file:///d:/My%20Projects/Arth/backend/core/views.py#L248-L274) return `403 Forbidden` on update/delete | ✅ **100% Done** |
+| **Agent Collections Stream** | Manager views individual collections across branch | Dedicated "Agent Field Collections Log" tab in [`BranchPortal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/pages/BranchPortal.jsx) | ✅ **100% Done** |
+| **Bank Deposits** | Create deposit challans against vault cash | [`DepositModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/DepositModal.jsx), `create_bank_deposit()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **Bank Settlement & Mismatch**| Reconcile statement credit, detect fake note/fee diff | [`SettleModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/SettleModal.jsx), `settle_bank_deposit()` in [`services.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/services.py) | ✅ **100% Done** |
+| **5-Stage Liquidity Funnel** | Expected $\rightarrow$ Field $\rightarrow$ Vault $\rightarrow$ Bank $\rightarrow$ Settled | Interactive executive pipeline in [`AdminDashboard.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/pages/AdminDashboard.jsx) | ✅ **100% Done** |
+| **Multi-Dimension Filters** | Filter by **Date**, **Branch**, **Agent**, and **Status** | Implemented on all viewsets in [`views.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/views.py) and UI filter bars | ✅ **100% Done** |
+| **Payment Gateway Sandbox** | Support UPI/digital repayments in unified ledger | Interactive UPI QR & VPA simulation in [`CollectModal.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/CollectModal.jsx) | ✅ **100% Done** |
+| **Security & Immutability** | Prevent unauthorized edits to reconciled records | State locks in [`views.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/views.py) return `403 Forbidden` on update/delete | ✅ **100% Done** |
 | **Concurrency Protection** | Prevent duplicate payments during network retries | Client idempotency keys + `select_for_update()` row-level locks | ✅ **100% Done** |
 | **Strict Decimal Arithmetic** | No floating-point arithmetic for financial figures | Strict `Decimal(12, 2)` throughout models, services, serializers | ✅ **100% Done** |
-| **Automated Test Suite** | 8 unit tests covering all financial edge cases | 100% passing tests in [`test_financial_lifecycle.py`](file:///d:/My%20Projects/Arth/backend/core/tests/test_financial_lifecycle.py) | ✅ **100% Done** |
-| **Interactive Demo Switcher** | 1-Click switching between Agent, Manager, and Admin | Top sticky banner in [`RoleSwitcherBanner.jsx`](file:///d:/My%20Projects/Arth/frontend/src/components/RoleSwitcherBanner.jsx) | ✅ **100% Done** |
-| **Documentation & Pitch Video**| README, ERD, Swagger docs, and 5-min Video Script | [README.md](file:///d:/My%20Projects/Arth/README.md), [VIDEO_SCRIPT.md](file:///d:/My%20Projects/Arth/VIDEO_SCRIPT.md), `/api/docs/` | ✅ **100% Done** |
-| **Docker Configuration** | Containerized deployment for DB, backend, frontend | [`docker-compose.yml`](file:///d:/My%20Projects/Arth/docker-compose.yml) and [`Dockerfile`](file:///d:/My%20Projects/Arth/backend/Dockerfile) | ✅ **100% Done** |
+| **Automated Test Suite** | 8 unit tests covering all financial edge cases | 100% passing tests in [`test_financial_lifecycle.py`](file:///d:/My%20Projects/Arth/CRMS%20Backend/core/tests/test_financial_lifecycle.py) | ✅ **100% Done** |
+| **Interactive Demo Switcher** | 1-Click switching between Agent, Manager, and Admin | Top sticky banner in [`RoleSwitcherBanner.jsx`](file:///d:/My%20Projects/Arth/CRMS%20Frontend/src/components/RoleSwitcherBanner.jsx) | ✅ **100% Done** |
+| **Documentation** | README, ERD, and OpenAPI Swagger documentation | [README.md](file:///d:/My%20Projects/Arth/README.md), `/api/docs/` | ✅ **100% Done** |
+| **Docker Configuration** | Containerized deployment for DB, backend, frontend | [`docker-compose.yml`](file:///d:/My%20Projects/Arth/docker-compose.yml) and [`Dockerfile`](file:///d:/My%20Projects/Arth/CRMS%20Backend/Dockerfile) | ✅ **100% Done** |
 
 ---
 
@@ -89,7 +94,7 @@ An interactive **Demo Role Switcher Bar** is permanently fixed at the top of the
 | Role | Username | Email | Password | Pre-loaded Context |
 | :--- | :--- | :--- | :--- | :--- |
 | **Field Collection Agent** (`Ramesh Kumar`) | `ramesh_agent` | `agent@cmrs.fintech` | `pass123` | Bangalore South Branch • ₹9,500 active cash on hand • 5 assigned borrowers |
-| **Branch Manager** (`Priya Sharma`) | `manager@cmrs.fintech` | `pass123` | Bangalore South Branch • ₹1,25,000 vault safe cash • 1 pending handover batch |
+| **Branch Manager** (`Priya Sharma`) | `priya_manager` | `manager@cmrs.fintech` | `pass123` | Bangalore South Branch • ₹1,25,000 vault safe cash • Pending handover batch |
 | **Finance Admin / HQ** (`Vikram Seth`) | `vikram_admin` | `admin@cmrs.fintech` | `pass123` | Head Office • Global visibility • Bank deposits pending settlement confirmation |
 
 ---
@@ -112,7 +117,7 @@ An interactive **Demo Role Switcher Bar** is permanently fixed at the top of the
 ### 1. Backend Setup (Django + DRF)
 ```bash
 # Navigate to backend
-cd backend
+cd "CRMS Backend"
 
 # Create & activate virtual environment (Windows)
 python -m venv venv
@@ -140,7 +145,7 @@ python manage.py runserver 0.0.0.0:8000
 ### 2. Frontend Setup (React + Vite)
 ```bash
 # In a separate terminal, navigate to frontend
-cd frontend
+cd "CRMS Frontend"
 
 # Install dependencies
 npm install
@@ -161,7 +166,7 @@ docker-compose up --build
 
 Run all unit tests:
 ```bash
-cd backend
+cd "CRMS Backend"
 python manage.py test core
 ```
 **Test Coverage Summary:**
@@ -173,10 +178,3 @@ python manage.py test core
 - `test_submission_rejection_resets_collections`: Verifies rejection reverts collections to agent unsubmitted queue.
 - `test_bank_deposit_and_settlement_workflow`: Verifies vault deduction, bank deposit challan, and finance settlement.
 - `test_settlement_mismatch_flagged`: Verifies credit difference triggers `SETTLEMENT_MISMATCH`.
-
----
-
-## 8. 5-Minute Video Pitch Script
-
-A timed script formatted for the required 5-minute explanation video is available in:
-👉 **[VIDEO_SCRIPT.md](file:///d:/My%20Projects/Arth/VIDEO_SCRIPT.md)**
