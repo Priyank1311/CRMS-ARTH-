@@ -13,8 +13,12 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data);
       return res.data;
     } catch (err) {
-      console.warn('Failed to fetch user profile:', err);
+      console.warn('Failed to fetch user profile, purging stale tokens:', err);
+      localStorage.removeItem('cmrs_access_token');
+      localStorage.removeItem('cmrs_refresh_token');
       setUser(null);
+      // Auto-fallback to default active role on fresh database reset
+      await switchRole('COLLECTION_AGENT');
       return null;
     }
   };
@@ -22,12 +26,16 @@ export const AuthProvider = ({ children }) => {
   const switchRole = async (targetRole) => {
     setLoading(true);
     try {
+      // Clear old tokens first so requests are clean
+      localStorage.removeItem('cmrs_access_token');
+      localStorage.removeItem('cmrs_refresh_token');
       const res = await api.post('/auth/quick/', { role: targetRole });
       localStorage.setItem('cmrs_access_token', res.data.access);
       localStorage.setItem('cmrs_refresh_token', res.data.refresh);
       setUser(res.data.user);
       // Fetch full profile with balances
-      await fetchCurrentUser();
+      const profileRes = await api.get('/auth/me/');
+      setUser(profileRes.data);
     } catch (err) {
       console.error('Role switch failed:', err);
     } finally {

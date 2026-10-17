@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: crms-backend
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn cmrs_project.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crms-database
+          property: connectionString
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "True"
+
+databases:
+  - name: crms-database
+    databaseName: crms
+    user: crms_user

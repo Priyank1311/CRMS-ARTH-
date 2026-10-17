@@ -31,11 +31,20 @@ class QuickAuthView(APIView):
     Convenient 1-Click demo authentication endpoint.
     Allows instant login as Agent, Branch Manager, or Finance Admin.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         role = request.data.get('role', 'COLLECTION_AGENT')
-        user = User.objects.filter(role=role).first()
+        if role == 'COLLECTION_AGENT':
+            user = User.objects.filter(role='COLLECTION_AGENT', username='ramesh_agent').first() or User.objects.filter(role=role).first()
+        elif role == 'BRANCH_MANAGER':
+            user = User.objects.filter(role='BRANCH_MANAGER', username='priya_manager').first() or User.objects.filter(role=role).first()
+        elif role == 'FINANCE_ADMIN':
+            user = User.objects.filter(role='FINANCE_ADMIN', username='vikram_admin').first() or User.objects.filter(role=role).first()
+        else:
+            user = User.objects.filter(role=role).first()
+
         if not user:
             # Fallback to any user or create
             user = User.objects.filter(is_superuser=True).first()

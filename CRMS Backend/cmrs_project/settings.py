@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,6 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 
     # Third-party packages
@@ -33,6 +35,7 @@ AUTH_USER_MODEL = 'core.User'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,9 +64,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cmrs_project.wsgi.application'
 
-# Database configuration: PostgreSQL if environment variables are set, else SQLite
-DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite')
-if DB_ENGINE == 'postgresql' or 'DATABASE_URL' in os.environ:
+# Database configuration: PostgreSQL via DATABASE_URL if available, otherwise SQLite
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=False if 'localhost' in os.environ.get('DATABASE_URL', '') or '127.0.0.1' in os.environ.get('DATABASE_URL', '') else True,
+        )
+    }
+elif os.environ.get('DB_ENGINE') == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -91,14 +102,59 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS
+# ==============================================================================
+# CORS & CSRF Configuration (Production & Development)
+# ==============================================================================
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+]
+
+extra_cors = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if extra_cors:
+    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in extra_cors.split(',') if origin.strip()])
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/.*\.vercel\.app$",
+    r"^https:\/\/.*\.onrender\.com$",
+    r"^http:\/\/localhost:[0-9]+$",
+    r"^http:\/\/127\.0\.0\.1:[0-9]+$",
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'https://*.vercel.app',
+    'https://*.onrender.com',
+]
+
+extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if extra_csrf:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_csrf.split(',') if origin.strip()])
 
 # REST Framework
 REST_FRAMEWORK = {

@@ -4,17 +4,24 @@ __pycache__/
 *$py.class
 *.so
 .Python
-backend/venv/
 venv/
+.venv/
 ENV/
 env/
+CRMS\ Backend/venv/
+CRMS Backend/venv/
+*.sqlite3
 *.sqlite3-journal
+staticfiles/
 
 # Node & Frontend
 node_modules/
-frontend/node_modules/
-frontend/dist/
-frontend/.oxlintrc.json
+dist/
+dist-ssr/
+CRMS\ Frontend/node_modules/
+CRMS Frontend/node_modules/
+CRMS\ Frontend/dist/
+CRMS Frontend/dist/
 .DS_Store
 *.log
 npm-debug.log*
@@ -25,6 +32,8 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+CRMS\ Frontend/.env
+CRMS\ Frontend/.env.production
 
 # IDE
 .vscode/
